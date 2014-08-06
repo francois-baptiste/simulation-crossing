@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 import matplotlib.transforms as transforms
 
 def straight_path(start, end):
+    start, end = np.array(start), np.array(end)
     v = end - start
     length = np.linalg.norm(v)
     def path(s):
@@ -14,6 +15,7 @@ def straight_path(start, end):
     return path
 
 def circular_path(center, radius, theta_start, theta_end):
+    center = np.array(center)
     def path(s):
         R = np.sign(theta_end - theta_start)*radius
         result = center + radius*np.c_[np.cos(theta_start + s/R), 
@@ -42,8 +44,52 @@ def concatenate_paths(*paths):
         return concatenate_paths(path, *paths[2:])
 
 def orientation(path, s, ds=0.1):
+    """Returns the angle of the path `path` at abscisse `s`."""
     dx, dy = path(s) - path(s-ds)
     return np.arctan2(dy, dx)
+
+def build_reference_path(speed_limit, amin=3.):
+    """Returns two crossing paths:
+       * one straight path (P1, P2)
+       * and one concatenation of a straight path (P3, P4), a curve of center C, radius R
+         and angle Theta, and a last straight path (P5, P2) coinciding
+         with the end of the first one (P5 is the center of (P1, P2)).
+       The two paths share the same curvilinear abscisse on their common part."""
+    P5 = (0, 0) # coordinates of the intersection point
+    R = 50 # radius of the curved path
+    Theta = np.pi/6 # angle of the curved path
+    minimum_stopping_distance = speed_limit**2/(2*amin)
+    assert minimum_stopping_distance > Theta*R
+
+    # Path 1:
+    P1 = (P5[0] - minimum_stopping_distance, P5[1])
+    P2 = (P5[0] + minimum_stopping_distance, P5[1])
+    path1 = straight_path(P1, P2)
+
+    # Path 2:
+    # - third subpath:
+    subpath3 = straight_path(P5, P2)
+
+    # - second subpath:
+    C = (P5[0], P5[1] - R)
+    Theta_end = np.pi/2.
+    Theta_start = Theta_end + Theta
+    subpath2 = circular_path(C, R, Theta_start, Theta_end)
+
+    # - first subpath:
+    d = minimum_stopping_distance - Theta*R # the length of the subpath
+    P4 = subpath2(0)
+    P3 = (P4[0] - np.cos(Theta)*d, P4[1] - np.sin(Theta)*d)
+    subpath1 = straight_path(P3, P4)
+
+    path2 = concatenate_paths(subpath1, subpath2, subpath3)
+
+    return path1, path2
+
+p1, p2 = build_reference_path(30)
+assert p1.length == p2.length
+np.testing.assert_array_almost_equal(p1(p1.length), p2(p2.length))
+np.testing.assert_array_almost_equal(p1(0.5*p1.length), p2(0.5*p2.length))
 
 def collision_set(path1, path2, threshold=0.99, ds=0.1):
     def extend_collision_enveloppe(s1, s2):
