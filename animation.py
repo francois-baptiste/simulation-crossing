@@ -30,7 +30,7 @@ def animate_robots(path_abscisse_tuples, **args):
     ax = plt.axes(xlim=(min(xlim)-margin, max(xlim)+margin),
                   ylim=(min(ylim)-margin, max(ylim)+margin))
 
-    height, width = 1.75, 4.
+    height, width = 2., 4.
 
     patches = [plt.Rectangle((-150, -150), width=width, height=height, fc=('r', 'g', 'g', 'r')[i],
                              alpha=(1,1,0.5,0.5)[i])
@@ -41,7 +41,6 @@ def animate_robots(path_abscisse_tuples, **args):
 
     paths = [l for p, _ in path_abscisse_tuples
                for l in plot(p, decorate=True)]
-    print paths
 
     def init():
         #for patch in patches:
@@ -63,7 +62,7 @@ def animate_robots(path_abscisse_tuples, **args):
     anim = animation.FuncAnimation(fig, animate, 
                                    init_func=init, 
                                    frames=len(path_abscisse_tuples[0][1]), 
-                                   interval=100,
+                                   interval=10,
                                    blit=True)
     plt.show()
 

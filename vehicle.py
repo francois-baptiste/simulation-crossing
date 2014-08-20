@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 
 DT = 0.01
 
-MODEL_PARAMS = {
+DEFAULT_DATA = {
     'L': 3., # Vehicle length
     'B': 1.5, # Forward semi-length
     'C': 1.5, # L-B
@@ -60,13 +60,13 @@ def lag_filter_update_value(lag, old_value, new_input):
     return (1-lag_coeff)*old_value + lag_coeff*new_input
 
 class Vehicle():
-    def __init__(self, params=MODEL_PARAMS):
-        self._params = params
-        self._states = [(0, 0, 0, 1, 0, 0, 0)]
+    def __init__(self, init_state=(0, 0, 0, 4, 0, 30, 0), data=DEFAULT_DATA):
+        self._vehicle_data = data
+        self._states = [init_state]
 
     @property
-    def params(self):
-        return self._params
+    def vehicle_data(self):
+        return self._vehicle_data
 
     @property
     def states(self):
@@ -74,6 +74,10 @@ class Vehicle():
 
     def update_state(self, command, brake, throttle, gear, position, speed, acceleration):
         self.states.append((command, brake, throttle, gear, position, speed, acceleration))
+
+    def get_history(self, attribute):
+        attributes = 'command brake throttle gear position speed acceleration'.split()
+        return np.array(self.states)[:, attributes.index(attribute)]
 
     @property
     def command(self):
@@ -105,18 +109,18 @@ class Vehicle():
 
     @property
     def wheel_speed(self):
-        R, = self.get_params(['R'])
+        R, = self.get_data(['R'])
         return self.speed/R
 
     @property
     def brake_pressure(self):
         return self.brake*150
 
-    def get_params(self, params):
-        return [self.params[p] for p in params]
+    def get_data(self, requested_data_elements):
+        return [self.vehicle_data[p] for p in requested_data_elements]
 
     def apply_command(self, command):
-        lag_brake, lag_throttle = self.get_params(['lag_brake', 'lag_throttle'])
+        lag_brake, lag_throttle = self.get_data(['lag_brake', 'lag_throttle'])
         brake_command, throttle_command = convert_to_brake_and_throttle(command)
         brake = lag_filter_update_value(lag_brake, self.brake, brake_command)
         throttle = lag_filter_update_value(lag_throttle, self.throttle, throttle_command)
@@ -133,7 +137,7 @@ class Vehicle():
                           acceleration=acceleration)
 
     def change_gear(self):
-        map_up, map_down = self.get_params(['shift_map_up', 'shift_map_down'])
+        map_up, map_down = self.get_data(['shift_map_up', 'shift_map_down'])
         if self.gear < 5:
             a, b = map_up[self.gear - 1]
             if self.wheel_speed > gear_map(a, b, self.throttle):
@@ -145,45 +149,36 @@ class Vehicle():
         return self.gear
 
     def max_torque(self):
-        gear_ratio, drive_ratio = self.get_params(['eta_%s' % self.gear, 'eta_f'])
+        gear_ratio, drive_ratio = self.get_data(['eta_%s' % self.gear, 'eta_f'])
         wheel_speed_RPM = 60/(2*np.pi)*self.wheel_speed
         engine_speed_RPM = gear_ratio*drive_ratio*wheel_speed_RPM
         return 528.7 + 0.152*engine_speed_RPM - 0.0000217*engine_speed_RPM**2
 
     def get_current_drive_force(self):
-        gear_ratio, drive_ratio, R = self.get_params(['eta_%s' % self.gear, 'eta_f',
+        gear_ratio, drive_ratio, R = self.get_data(['eta_%s' % self.gear, 'eta_f',
                                                       'R'])
         wheel_torque = self.throttle*gear_ratio*drive_ratio*self.max_torque()
         return wheel_torque/R*0.7
 
     def get_current_brake_force(self):
-        K_fw, K_rr, alpha, R = self.get_params(['Kb_forward', 'Kb_rear', 'alpha',
+        K_fw, K_rr, alpha, R = self.get_data(['Kb_forward', 'Kb_rear', 'alpha',
                                                 'R'])
         brake_torque = self.brake_pressure*(K_fw + K_rr)*min(1., self.wheel_speed/alpha)
         return brake_torque/R
                 
     def get_current_drag_force(self):
-        rho_air, A, Cd = self.get_params(['rho_air', 'A', 'Cd'])
+        rho_air, A, Cd = self.get_data(['rho_air', 'A', 'Cd'])
         return -0.5*np.sign(self.speed)*rho_air*A*Cd*self.speed**2
 
     def get_current_rolling_resistance_force(self):
-        Cr, M, g = self.get_params(['Cr', 'M', 'g'])
+        Cr, M, g = self.get_data(['Cr', 'M', 'g'])
         normal_force = -M*g
         return normal_force*Cr*min(1., abs(self.speed))*np.sign(self.speed)
 
     def get_current_acceleration(self):
-        M, = self.get_params(['M'])
+        M, = self.get_data(['M'])
         return sum((self.get_current_drive_force(),
                     self.get_current_brake_force(),
                     self.get_current_drag_force(),
                     self.get_current_rolling_resistance_force()))/M
 
-v = Vehicle()
-commands = np.ones(1000)
-for c in commands:
-    v.apply_command(c)
-states = np.array(v.states)
-plt.plot(states[:, 4])
-plt.plot(states[:, 5])
-plt.plot(states[:, 6])
-plt.show()

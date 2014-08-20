@@ -24,5 +24,5 @@ constant_speed = build_constant_speed_controller()
 
 def build_full_brake_controller(robots_data):
     def full_brake(state):
-        return [r.min_acc for r in robots_data]
+        return np.array([r.min_acc for r in robots_data])
     return full_brake

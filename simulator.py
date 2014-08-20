@@ -13,6 +13,7 @@ from scipy.optimize import minimize
 
 from deterministic import Robot, determine_priority
 from mpc_controller import build_MPC_controller
+from linear_controller import build_linear_controller
 
 TIME_HORIZON = 75
 HORIZON = 10
@@ -39,8 +40,9 @@ def simulator(robot1, robot2, time_horizon):
     states[0] = np.r_[robot1.pos, robot1.speed, robot1.acc, robot2.pos, robot2.speed, robot2.acc]
     system = System(np.r_[0, 39, 0, 0, 39, 0], dt=0.1)
     #ctrl = build_bang_bang_controller(0)
-    ctrl = build_MPC_controller(HORIZON, PRIORITY, system.robots_data, paths)
-    #ctrl = build_constant_speed_controller()
+    #ctrl = build_MPC_controller(HORIZON, PRIORITY, system.robots_data, paths)
+    d_safe = 10.
+    ctrl = build_linear_controller(PRIORITY, system.robots_data, system.robots_history[0], d_safe)
     system.change_controller(ctrl)
     system.integrate_dynamics_n_times(time_horizon)
     return system.robots_history
@@ -65,6 +67,8 @@ plt.plot(result[:,3], label='s2')
 plt.plot(result[:,1], label='v1')
 plt.plot(result[:,4], label='v2')
 plt.legend()
+plt.figure()
+plt.plot(result[:,0], result[:,0] - result[:,3])
 plt.show()
 
 #init = np.r_[x0, PRIORITY, TIME_HORIZON]
