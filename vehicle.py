@@ -5,15 +5,16 @@
 # Copyright © 2014 Sébastien Diemer <sebastien.diemer@mines-paristech.fr>
 
 """
-Un module pour décrire les véhicules
+This module defines the Vehicle class, representing the simulated vehicles.
+Vehicles motion is only longitudinal, no lateral dynamics are taken into account.
 """
 import numpy as np
-from matplotlib import pyplot as plt
 
 DT = 0.01
 
 DEFAULT_DATA = {
-    'L': 3., # Vehicle length
+    'length': 3., # Vehicle length
+    'width': 1.5, # Vehicle width
     'B': 1.5, # Forward semi-length
     'C': 1.5, # L-B
     'H': 0.6, # The height of the center of gravity
@@ -60,9 +61,14 @@ def lag_filter_update_value(lag, old_value, new_input):
     return (1-lag_coeff)*old_value + lag_coeff*new_input
 
 class Vehicle():
-    def __init__(self, init_state=(0, 0, 0, 4, 0, 30, 0), data=DEFAULT_DATA):
+    def __init__(self, path, init_state=(0, 0, 0, 4, 0, 30, 0), data=DEFAULT_DATA):
         self._vehicle_data = data
         self._states = [init_state]
+        self._path = path
+
+    @property
+    def path(self):
+        return self._path
 
     @property
     def vehicle_data(self):
@@ -181,4 +187,3 @@ class Vehicle():
                     self.get_current_brake_force(),
                     self.get_current_drag_force(),
                     self.get_current_rolling_resistance_force()))/M
-

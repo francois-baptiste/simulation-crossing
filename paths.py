@@ -2,7 +2,23 @@ import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.transforms as transforms
 
+"""
+This module implements a path object.
+A path is a function `p that maps a point `s in a real interval to a point `p(s) in the plane R^2.
+Every path has a length argument.
+
+Functions:
+    straight_path: returns a straight path
+    circular_path: returns a circular path
+    concatenate_paths: returns a path, which is the concatenation of the paths in argument
+    orientation: returns the orientation of a path at a given curvilinear abscisse
+    build_reference_path: returns the default path used in the simulations
+    collision_set: given two paths returns the set of abscisses which lead to a collision
+    plot: plot a path using matplotlib
+"""
+
 def straight_path(start, end):
+    """A constructor that returns a straight path joining `start and `end."""
     start, end = np.array(start), np.array(end)
     v = end - start
     length = np.linalg.norm(v)
@@ -15,6 +31,9 @@ def straight_path(start, end):
     return path
 
 def circular_path(center, radius, theta_start, theta_end):
+    """A constructor that returns a circular path.
+    If `C is the circle defined by `center and `radius, this path joins the point of angle 
+    `theta_start to the point of angle `theta_end."""
     center = np.array(center)
     def path(s):
         R = np.sign(theta_end - theta_start)*radius
@@ -27,6 +46,7 @@ def circular_path(center, radius, theta_start, theta_end):
     return path
 
 def concatenate_paths(*paths):
+    """This function returns a path, which is the concatenation of all the paths in argument."""
     if len(paths) == 0: return None
     if len(paths) == 1: return paths[0]
     if len(paths) == 2:
@@ -92,6 +112,8 @@ np.testing.assert_array_almost_equal(p1(p1.length), p2(p2.length))
 np.testing.assert_array_almost_equal(p1(0.5*p1.length), p2(0.5*p2.length))
 
 def collision_set(path1, path2, threshold=0.99, ds=0.1):
+    """This function determines the collision set between two paths.
+    The major hypothesis here is to represent vehicles as circles of radius `threshold`."""
     def extend_collision_enveloppe(s1, s2):
         collision_point = []
         if np.linalg.norm(path1(s1) - path2(s2)) < threshold:
@@ -112,6 +134,7 @@ def collision_set(path1, path2, threshold=0.99, ds=0.1):
     return None if not result else np.array(reduce(lambda x,y: x+y, result))
 
 def plot(path, fig=None, ax=None, resolution=100, decorate=False):
+    """This function plots a path using the matplotlib library."""
     if not ax: ax = plt.gca()
     if not fig: fig = plt.gcf()
     s = np.linspace(0, path.length, resolution)
@@ -126,21 +149,3 @@ def plot(path, fig=None, ax=None, resolution=100, decorate=False):
         line = (line1, line2, line3, line4)
     ax.set_aspect('equal')
     return line
-
-#p1 = straight_path(np.r_[-5, 2], np.r_[5, 2])
-#p2 = concatenate_paths(straight_path(np.r_[-5, np.tan(np.pi/6)*(-5+1) + np.sin(np.pi/3)],
-#                                     np.r_[-1, 2*np.sin(np.pi/3)]),
-#                       circular_path(0, 2, 2*np.pi/3, np.pi/2),
-#                       straight_path(np.r_[0, 2], np.r_[5, 2]))
-#plot(p1)
-#plot(p2)
-#
-#collision = collision_set(p1, p2)
-#from scipy.spatial import ConvexHull
-#convex = ConvexHull(collision)
-#plt.figure()
-#plt.plot(collision[:, 0], collision[:, 1], 'b+')
-#for simplex in convex.simplices:
-#    plt.plot(collision[simplex, 0], collision[simplex, 1], 'k-')
-#plt.axis('equal')
-#plt.show()
