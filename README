@@ -1,0 +1,8 @@
+This project is a simulator validating control algorithms for autonomous vehicles at intersections.
+
+Currently only the longitudinal motion of the vehicles is modelled and the number of vehicles is limited to two.
+
+A simple simulation can be executed and analyzed using the following command:
+
+    python demo.py
+
