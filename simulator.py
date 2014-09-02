@@ -16,3 +16,4 @@ def simulate(vehicles, time_horizon):
         u1, u2 = controller(vehicles)
         for i, u in enumerate((u1, u2)):
             vehicles[i].apply_command(u)
+    return vehicles

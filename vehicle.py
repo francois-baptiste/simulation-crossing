@@ -61,6 +61,7 @@ def lag_filter_update_value(lag, old_value, new_input):
     return (1-lag_coeff)*old_value + lag_coeff*new_input
 
 class Vehicle():
+    ATTRIBUTES = 'command brake throttle gear position speed acceleration'.split()
     def __init__(self, path, init_state=(0, 0, 0, 4, 0, 30, 0), data=DEFAULT_DATA):
         self._vehicle_data = data
         self._states = [init_state]
@@ -78,40 +79,46 @@ class Vehicle():
     def states(self):
         return self._states
 
-    def update_state(self, command, brake, throttle, gear, position, speed, acceleration):
-        self.states.append((command, brake, throttle, gear, position, speed, acceleration))
+    def update_state(self, **kwargs):
+        state = [kwargs[a] for a in Vehicle.ATTRIBUTES]
+        if len(state) == len(Vehicle.ATTRIBUTES):
+            self.states.append(state)
+        else:
+            raise KeyError("Missing attributes in state")
 
     def get_history(self, attribute):
-        attributes = 'command brake throttle gear position speed acceleration'.split()
-        return np.array(self.states)[:, attributes.index(attribute)]
+        return np.array(self.states)[:, Vehicle.ATTRIBUTES.index(attribute)]
+
+    def get_attribute(self, attribute):
+        return self.states[-1][Vehicle.ATTRIBUTES.index(attribute)]
 
     @property
     def command(self):
-        return self.states[-1][0]
+        return self.get_attribute('command')
 
     @property
     def brake(self):
-        return self.states[-1][1]
+        return self.get_attribute('brake')
 
     @property
     def throttle(self):
-        return self.states[-1][2]
+        return self.get_attribute('throttle')
 
     @property
     def gear(self):
-        return self.states[-1][3]
+        return self.get_attribute('gear')
 
     @property
     def position(self):
-        return self.states[-1][4]
+        return self.get_attribute('position')
 
     @property
     def speed(self):
-        return self.states[-1][5]
+        return self.get_attribute('speed')
 
     @property
     def acceleration(self):
-        return self.states[-1][6]
+        return self.get_attribute('acceleration')
 
     @property
     def wheel_speed(self):
@@ -187,3 +194,82 @@ class Vehicle():
                     self.get_current_brake_force(),
                     self.get_current_drag_force(),
                     self.get_current_rolling_resistance_force()))/M
+
+class SimpleVehicle():
+    """This class represents a simple model of vehicle with bounded velocity and acceleration.
+    Vehicles motion is only longitudinal, no lateral dynamics are taken into account.
+    It has less parameters than the Vehicle class and a simplified dynamics which makes it
+    suitable for approximations."""
+
+    ATTRIBUTES = 'position speed acceleration command'.split()
+    DEFAULT_DATA = {
+                    'min_speed':0.,
+                    'max_speed':30.,
+                    'min_acceleration':-10.,
+                    'max_acceleration':10.,
+                    'length':3.,
+                    'width':1.5,
+                   }
+
+
+    def __init__(self, path, init_state=(0, 30, 0, 0), data={}):
+        if not data: data=SimpleVehicle.DEFAULT_DATA
+        if not set(data.keys()) == set(SimpleVehicle.DEFAULT_DATA.keys()):
+            raise ValueError('Invalid data for SimpleVehicle')
+        if not len(init_state) == len(SimpleVehicle.ATTRIBUTES):
+            raise ValueError('Invalid initial state for SimpleVehicle')
+        self._states = [init_state]
+        self._path = path
+        self._vehicle_data = data
+
+    def get_attribute(self, attribute):
+        return self.states[-1][SimpleVehicle.ATTRIBUTES.index(attribute)]
+
+    def update_state(self, **kwargs):
+        state = [kwargs[a] for a in SimpleVehicle.ATTRIBUTES]
+        if len(state) == len(SimpleVehicle.ATTRIBUTES):
+            self.states.append(state)
+        else:
+            raise KeyError("Missing attributes in state")
+
+    def get_history(self, attribute):
+        return np.array(self.states)[:, SimpleVehicle.ATTRIBUTES.index(attribute)]
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def states(self):
+        return self._states
+
+    @property
+    def position(self):
+        return self.get_attribute('position')
+
+    @property
+    def speed(self):
+        return self.get_attribute('speed')
+
+    @property
+    def acceleration(self):
+        return self.get_attribute('acceleration') 
+    @property
+    def command(self):
+        return self.get_attribute('command')
+
+    @property
+    def vehicle_data(self):
+        return self._vehicle_data
+
+    def get_data(self, requested_data_elements):
+        return [self.vehicle_data[p] for p in requested_data_elements]
+
+    def apply_command(self, command):
+        vmin, vmax, amin, amax = self.get_data(('min_speed', 'max_speed',
+                                                'min_acceleration', 'max_acceleration'))
+        acceleration = command*amax if command > 0 else -command*amin
+        speed = max(min(self.speed + DT*self.acceleration, vmax), vmin)
+        position = self.position + DT*self.speed
+        self.update_state(position=position, speed=speed, acceleration=acceleration,
+                          command=command)

@@ -5,7 +5,7 @@
 # Copyright © 2014 Sébastien Diemer <sebastien.diemer@mines-paristech.fr>
 
 """
-A simple demo of the simulator.
+A simple demo of the simulator using the Vehicle class.
 """
 
 import numpy as np
@@ -15,17 +15,22 @@ import paths, simulator
 from animation import animate_vehicles
 from vehicle import Vehicle
 
-def simple_demo():
+def simu():
     ref_paths = paths.build_reference_path(30.)
     p1, p2 = ref_paths
-    v1 = Vehicle(p1, init_state=(0, 0, 0, 4, np.random.rand()*10, np.random.rand()*20+20, 0))
-    v2 = Vehicle(p2, init_state=(0, 0, 0, 4, np.random.rand()*10, np.random.rand()*20+20, 0))
-    v1 = Vehicle(p1, init_state=(0, 0, 0, 4, 0, 0, 0))
+    v1 = Vehicle(p1, init_state=(0, 0, 0, 4, 0, 20, 0))
     v2 = Vehicle(p2, init_state=(0, 0, 0, 4, 20, 30, 0))
     simulator.simulate([v1, v2], 1000)
+    return v1, v2
+
+def simple_demo():
+    v1, v2 = simu()
 
     # show the simulation with an animation
-    animate_vehicles([v1, v2], save=False)
+    animate_vehicles([v1, v2], save=True)
+
+def simple_demo_graph():
+    v1, v2 = simu()
 
     # display the simulation data on a graph
     plt.figure()
