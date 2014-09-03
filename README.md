@@ -8,4 +8,4 @@ A simple simulation can be executed and analyzed using the following command:
 
     python demo.py
 
-The result of one simple simulation can be seen [here](https://www.youtube.com/watch?v=pEgcJlzgOWc&feature=youtu.be)
+The result of one simple simulation can be seen [here](http://youtu.be/PcqIsDTMEl0)
