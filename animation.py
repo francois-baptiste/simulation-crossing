@@ -40,6 +40,7 @@ def update_vehicle_patch(vehicle_patches, vehicle, command, path, position, inde
     x, y = path(position)
     length, width = vehicle.get_data(('length', 'width'))
     for j, vehicle_patch in enumerate(vehicle_patches):
+        vehicle_patch.set_visible(True)
         vehicle_patch.set_xy((x-length/2., y-width/2.))
         theta = paths.orientation(path, position)
         t2 = Affine2D().rotate_around(x, y, theta) + ax.transData
@@ -69,10 +70,14 @@ def animate_vehicles(vehicles, save=False):
 
     paths_patches = [patch for v in vehicles for patch in paths.plot(v.path, decorate=True)]
 
+    for patches in vehicles_patches:
+        for patch in patches:
+            ax.add_patch(patch)
+
     def init():
         for patches in vehicles_patches:
             for patch in patches:
-                ax.add_patch(patch)
+                patch.set_visible(False)
         return [patch for vpatches in vehicles_patches for patch in vpatches]
 
     def animate(i):
@@ -94,5 +99,3 @@ def animate_vehicles(vehicles, save=False):
         anim.save('basic_animation.mp4', fps=50, dpi=200)
     else:
         plt.show()
-
-

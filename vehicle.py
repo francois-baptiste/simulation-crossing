@@ -13,8 +13,8 @@ import numpy as np
 DT = 0.01
 
 DEFAULT_DATA = {
-    'length': 3., # Vehicle length
-    'width': 1.5, # Vehicle width
+    'length': 5., # Vehicle length
+    'width': 3., # Vehicle width
     'B': 1.5, # Forward semi-length
     'C': 1.5, # L-B
     'H': 0.6, # The height of the center of gravity

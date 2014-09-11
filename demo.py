@@ -27,7 +27,7 @@ def simple_demo():
     v1, v2 = simu()
 
     # show the simulation with an animation
-    animate_vehicles([v1, v2], save=True)
+    animate_vehicles([v1, v2], save=False)
 
 def simple_demo_graph():
     v1, v2 = simu()
