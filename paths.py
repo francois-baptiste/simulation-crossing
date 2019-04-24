@@ -1,6 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.transforms as transforms
+from functools import reduce
 
 """
 This module implements a path object.
@@ -55,7 +56,7 @@ def concatenate_paths(*paths):
             if np.isscalar(s):
                 return path1(s) if s <= path1.length else path2(s - path1.length)
             s1 = np.less_equal(s, path1.length)
-            s2 = np.negative(s1)
+            s2 = ~s1
             return np.r_[path1(s[s1]), path2(s[s2] - path1.length)]
         path.length = path1.length + path2.length
         return path

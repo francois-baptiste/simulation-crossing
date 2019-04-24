@@ -12,7 +12,7 @@ import controllers
 def simulate(vehicles, time_horizon):
     priority = 0
     controller = lambda v: controllers.constant_spacing_controller(v, priority)
-    for t in xrange(1, time_horizon):
+    for t in range(1, time_horizon):
         u1, u2 = controller(vehicles)
         for i, u in enumerate((u1, u2)):
             vehicles[i].apply_command(u)

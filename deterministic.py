@@ -80,7 +80,7 @@ def minimum_time_to_escape(a, b1, b2, robot1, robot2):
                                             robot2.amax, robot2.speed, max_speed, robot2.pos)
     plot_coordination_diagram(result2, reverse_axis=False, color='g')
     t2 = sum(t for t, _ in result2)
-    print (t1, 1), (t2, 2)
+    print((t1, 1), (t2, 2))
     return min((t1, 1), (t2, 2))
 
 def determine_priority(robot1, robot2):
@@ -107,7 +107,7 @@ def determine_priority(robot1, robot2):
 
 def plot_coordination_diagram(time_calculation_result, reverse_axis=False, color='b'):
     dt = 0.01
-    times, args = zip(*time_calculation_result)
+    times, args = list(zip(*time_calculation_result))
     t = [np.arange(0, tf + dt, dt) for tf in times]
     if not reverse_axis:
         s1 = [integrate_abscisse(*arg[:3])(time) for time, arg in zip(t, args)]
@@ -122,7 +122,7 @@ def plot_coordination_diagram(time_calculation_result, reverse_axis=False, color
 Robot = namedtuple('Robot', 'length pos speed max_speed acc amin amax')
 robot1 = Robot(length=3., pos=0, speed=1.2, max_speed=2., acc=0., amin=-0.5, amax=0.8)
 robot2 = Robot(length=3., pos=0, speed=1.2, max_speed=2., acc=0., amin=-0.2, amax=0.3)
-print minimum_time_to_escape(2., -2, 3, robot1, robot2)
+print(minimum_time_to_escape(2., -2, 3, robot1, robot2))
 
 
 #s1_0, v1_0, a1 = 0, 1.2, -0.2

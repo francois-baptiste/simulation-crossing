@@ -62,8 +62,8 @@ def init_figure_and_axes(xlim, ylim):
 
 
 def animate_vehicles(vehicles, save=False):
-    xlim, ylim = zip(*[v.path(s) for v in vehicles
-                                 for s in (0, v.path.length)])
+    xlim, ylim = list(zip(*[v.path(s) for v in vehicles
+                                 for s in (0, v.path.length)]))
     fig, ax = init_figure_and_axes(xlim, ylim)
 
     vehicles_patches = [init_vehicle_patch(v, i) for i, v in enumerate(vehicles)]
