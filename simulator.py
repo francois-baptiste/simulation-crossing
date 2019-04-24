@@ -9,6 +9,7 @@ This module simulates the evolution of two vehicles, using a constant spacing co
 """
 import controllers
 
+
 def simulate(vehicles, time_horizon):
     priority = 0
     controller = lambda v: controllers.constant_spacing_controller(v, priority)

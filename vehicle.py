@@ -13,24 +13,24 @@ import numpy as np
 DT = 0.01
 
 DEFAULT_DATA = {
-    'length': 5., # Vehicle length
-    'width': 3., # Vehicle width
-    'B': 1.5, # Forward semi-length
-    'C': 1.5, # L-B
-    'H': 0.6, # The height of the center of gravity
-    'H_aero': 1., # the height at which the equivalent aerodynamic force act
-    'M': 1626, # The weight of the vehicle
-    'J': 15., # moment of inertia
-    'A': 2.08216, # 1.6 + 0.00056*(M-765)
-    'R': 0.3, # The radius of the tire
+    'length': 5.,  # Vehicle length
+    'width': 3.,  # Vehicle width
+    'B': 1.5,  # Forward semi-length
+    'C': 1.5,  # L-B
+    'H': 0.6,  # The height of the center of gravity
+    'H_aero': 1.,  # the height at which the equivalent aerodynamic force act
+    'M': 1626,  # The weight of the vehicle
+    'J': 15.,  # moment of inertia
+    'A': 2.08216,  # 1.6 + 0.00056*(M-765)
+    'R': 0.3,  # The radius of the tire
     'g': 9.81,
     'rho_air': 1.23,
-    'Cd': 0.29, # aerodynamic drag coefficient
-    'Cr': 0.01, # rolling drag
-    'Cf': .1, # rotation axis friction
+    'Cd': 0.29,  # aerodynamic drag coefficient
+    'Cr': 0.01,  # rolling drag
+    'Cf': .1,  # rotation axis friction
     'lag_throttle': 0.2,
     'lag_brake': 0.2,
-    'brake_max_pressure': 150, # 150 bar the pressure applied when full brake
+    'brake_max_pressure': 150,  # 150 bar the pressure applied when full brake
     'alpha': 0.01,
     'Kc': 1.,
     'Kb_forward': 13.33,
@@ -43,25 +43,29 @@ DEFAULT_DATA = {
     'eta_5': 0.83,
     'shift_map_up': ((15, 58), (30, 90), (45, 120), (60, 150)),
     'shift_map_down': ((7, 45), (17, 63), (32, 90), (48, 125)),
-   }
+}
+
 
 def convert_to_brake_and_throttle(command):
     brake = command if command < 0 else 0.
     throttle = command if command > 0 else 0.
     return brake, throttle
 
+
 def gear_map(a, b, throttle):
     return (a if throttle <= 0.3
             else b if throttle >= 0.8
-            else (b-a)/0.5*(throttle-0.3) + a)
+    else (b - a) / 0.5 * (throttle - 0.3) + a)
 
 
 def lag_filter_update_value(lag, old_value, new_input):
-    lag_coeff = DT/lag
-    return (1-lag_coeff)*old_value + lag_coeff*new_input
+    lag_coeff = DT / lag
+    return (1 - lag_coeff) * old_value + lag_coeff * new_input
+
 
 class Vehicle():
     ATTRIBUTES = 'command brake throttle gear position speed acceleration'.split()
+
     def __init__(self, path, init_state=(0, 0, 0, 4, 0, 30, 0), data=DEFAULT_DATA):
         self._vehicle_data = data
         self._states = [init_state]
@@ -123,11 +127,11 @@ class Vehicle():
     @property
     def wheel_speed(self):
         R, = self.get_data(['R'])
-        return self.speed/R
+        return self.speed / R
 
     @property
     def brake_pressure(self):
-        return self.brake*150
+        return self.brake * 150
 
     def get_data(self, requested_data_elements):
         return [self.vehicle_data[p] for p in requested_data_elements]
@@ -139,8 +143,8 @@ class Vehicle():
         throttle = lag_filter_update_value(lag_throttle, self.throttle, throttle_command)
         gear = self.change_gear()
         acceleration = self.get_current_acceleration()
-        speed = self.speed + DT*acceleration
-        position = self.position + DT*speed
+        speed = self.speed + DT * acceleration
+        position = self.position + DT * speed
         self.update_state(command=command,
                           brake=brake,
                           throttle=throttle,
@@ -163,37 +167,38 @@ class Vehicle():
 
     def max_torque(self):
         gear_ratio, drive_ratio = self.get_data(['eta_%s' % self.gear, 'eta_f'])
-        wheel_speed_RPM = 60/(2*np.pi)*self.wheel_speed
-        engine_speed_RPM = gear_ratio*drive_ratio*wheel_speed_RPM
-        return 528.7 + 0.152*engine_speed_RPM - 0.0000217*engine_speed_RPM**2
+        wheel_speed_RPM = 60 / (2 * np.pi) * self.wheel_speed
+        engine_speed_RPM = gear_ratio * drive_ratio * wheel_speed_RPM
+        return 528.7 + 0.152 * engine_speed_RPM - 0.0000217 * engine_speed_RPM ** 2
 
     def get_current_drive_force(self):
         gear_ratio, drive_ratio, R = self.get_data(['eta_%s' % self.gear, 'eta_f',
-                                                      'R'])
-        wheel_torque = self.throttle*gear_ratio*drive_ratio*self.max_torque()
-        return wheel_torque/R*0.7
+                                                    'R'])
+        wheel_torque = self.throttle * gear_ratio * drive_ratio * self.max_torque()
+        return wheel_torque / R * 0.7
 
     def get_current_brake_force(self):
         K_fw, K_rr, alpha, R = self.get_data(['Kb_forward', 'Kb_rear', 'alpha',
-                                                'R'])
-        brake_torque = self.brake_pressure*(K_fw + K_rr)*min(1., self.wheel_speed/alpha)
-        return brake_torque/R
-                
+                                              'R'])
+        brake_torque = self.brake_pressure * (K_fw + K_rr) * min(1., self.wheel_speed / alpha)
+        return brake_torque / R
+
     def get_current_drag_force(self):
         rho_air, A, Cd = self.get_data(['rho_air', 'A', 'Cd'])
-        return -0.5*np.sign(self.speed)*rho_air*A*Cd*self.speed**2
+        return -0.5 * np.sign(self.speed) * rho_air * A * Cd * self.speed ** 2
 
     def get_current_rolling_resistance_force(self):
         Cr, M, g = self.get_data(['Cr', 'M', 'g'])
-        normal_force = -M*g
-        return normal_force*Cr*min(1., abs(self.speed))*np.sign(self.speed)
+        normal_force = -M * g
+        return normal_force * Cr * min(1., abs(self.speed)) * np.sign(self.speed)
 
     def get_current_acceleration(self):
         M, = self.get_data(['M'])
         return sum((self.get_current_drive_force(),
                     self.get_current_brake_force(),
                     self.get_current_drag_force(),
-                    self.get_current_rolling_resistance_force()))/M
+                    self.get_current_rolling_resistance_force())) / M
+
 
 class SimpleVehicle():
     """This class represents a simple model of vehicle with bounded velocity and acceleration.
@@ -203,17 +208,16 @@ class SimpleVehicle():
 
     ATTRIBUTES = 'position speed acceleration command'.split()
     DEFAULT_DATA = {
-                    'min_speed':0.,
-                    'max_speed':30.,
-                    'min_acceleration':-10.,
-                    'max_acceleration':10.,
-                    'length':3.,
-                    'width':1.5,
-                   }
-
+        'min_speed': 0.,
+        'max_speed': 30.,
+        'min_acceleration': -10.,
+        'max_acceleration': 10.,
+        'length': 3.,
+        'width': 1.5,
+    }
 
     def __init__(self, path, init_state=(0, 30, 0, 0), data={}):
-        if not data: data=SimpleVehicle.DEFAULT_DATA
+        if not data: data = SimpleVehicle.DEFAULT_DATA
         if not set(data.keys()) == set(SimpleVehicle.DEFAULT_DATA.keys()):
             raise ValueError('Invalid data for SimpleVehicle')
         if not len(init_state) == len(SimpleVehicle.ATTRIBUTES):
@@ -253,7 +257,8 @@ class SimpleVehicle():
 
     @property
     def acceleration(self):
-        return self.get_attribute('acceleration') 
+        return self.get_attribute('acceleration')
+
     @property
     def command(self):
         return self.get_attribute('command')
@@ -268,8 +273,8 @@ class SimpleVehicle():
     def apply_command(self, command):
         vmin, vmax, amin, amax = self.get_data(('min_speed', 'max_speed',
                                                 'min_acceleration', 'max_acceleration'))
-        acceleration = command*amax if command > 0 else -command*amin
-        speed = max(min(self.speed + DT*self.acceleration, vmax), vmin)
-        position = self.position + DT*self.speed
+        acceleration = command * amax if command > 0 else -command * amin
+        speed = max(min(self.speed + DT * self.acceleration, vmax), vmin)
+        position = self.position + DT * self.speed
         self.update_state(position=position, speed=speed, acceleration=acceleration,
                           command=command)

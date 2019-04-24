@@ -8,12 +8,13 @@
 A simple demo of the simulator using the Vehicle class.
 """
 
-import numpy as np
 from matplotlib import pyplot as plt
 
-import paths, simulator
+import paths
+import simulator
 from animation import animate_vehicles
 from vehicle import Vehicle
+
 
 def simu():
     ref_paths = paths.build_reference_path(30.)
@@ -23,11 +24,13 @@ def simu():
     simulator.simulate([v1, v2], 1000)
     return v1, v2
 
+
 def simple_demo():
     v1, v2 = simu()
 
     # show the simulation with an animation
     animate_vehicles([v1, v2], save=False)
+
 
 def simple_demo_graph():
     v1, v2 = simu()
@@ -43,6 +46,7 @@ def simple_demo_graph():
     plt.plot(v1.get_history('position') - v2.get_history('position'), label='delta')
     plt.legend()
     plt.show()
+
 
 if __name__ == '__main__':
     simple_demo()

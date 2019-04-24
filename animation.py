@@ -8,12 +8,12 @@
 This module provides utility functions to make an animation from a simulation.
 """
 
-import numpy as np
+from matplotlib import animation
 from matplotlib import pyplot as plt
 from matplotlib.transforms import Affine2D
-from matplotlib import animation
 
 import paths
+
 
 def vehicle_color(vehicle_index):
     """Returns a string representing the color of a vehicle given its index in the list of 
@@ -21,7 +21,8 @@ def vehicle_color(vehicle_index):
     In this way we can distinguish vehicles coming from different paths when paths have
     common sections."""
     colors = ['b', 'g']
-    return colors[vehicle_index%len(colors)]
+    return colors[vehicle_index % len(colors)]
+
 
 def init_vehicle_patch(vehicle, index):
     """Return a matplotlib shape representing the vehicle.
@@ -29,9 +30,10 @@ def init_vehicle_patch(vehicle, index):
     axis limits."""
     length, width = vehicle.get_data(('length', 'width'))
     return (plt.Rectangle(xy=(-150, -150), width=length, height=width,
-                          fc=vehicle_color(index), zorder=100+2*index),
-            plt.Rectangle(xy=(-150, -150), width=length/5, height=width,
-                          fc=vehicle_color(index), zorder=101+2*index))
+                          fc=vehicle_color(index), zorder=100 + 2 * index),
+            plt.Rectangle(xy=(-150, -150), width=length / 5, height=width,
+                          fc=vehicle_color(index), zorder=101 + 2 * index))
+
 
 def update_vehicle_patch(vehicle_patches, vehicle, command, path, position, index, ax):
     """Updates the vehicle patch object according to the vehicle position.
@@ -41,14 +43,17 @@ def update_vehicle_patch(vehicle_patches, vehicle, command, path, position, inde
     length, width = vehicle.get_data(('length', 'width'))
     for j, vehicle_patch in enumerate(vehicle_patches):
         vehicle_patch.set_visible(True)
-        vehicle_patch.set_xy((x-length/2., y-width/2.))
+        vehicle_patch.set_xy((x - length / 2., y - width / 2.))
         theta = paths.orientation(path, position)
         t2 = Affine2D().rotate_around(x, y, theta) + ax.transData
         vehicle_patch.set_transform(t2)
-        if j%2:
-            if command < 0: vehicle_patch.set_fc('r')
-            else: vehicle_patch.set_fc(vehicle_color(index))
+        if j % 2:
+            if command < 0:
+                vehicle_patch.set_fc('r')
+            else:
+                vehicle_patch.set_fc(vehicle_color(index))
     return None
+
 
 def init_figure_and_axes(xlim, ylim):
     """Set up the pyplot figure and axes and return them."""
@@ -56,14 +61,14 @@ def init_figure_and_axes(xlim, ylim):
     fig.set_dpi(100)
     fig.set_size_inches(20, 8)
     margin = 10
-    ax = plt.axes(xlim=(min(xlim)-margin, max(xlim)+margin),
-                  ylim=(min(ylim)-margin, max(ylim)+margin))
+    ax = plt.axes(xlim=(min(xlim) - margin, max(xlim) + margin),
+                  ylim=(min(ylim) - margin, max(ylim) + margin))
     return fig, ax
 
 
 def animate_vehicles(vehicles, save=False):
     xlim, ylim = list(zip(*[v.path(s) for v in vehicles
-                                 for s in (0, v.path.length)]))
+                            for s in (0, v.path.length)]))
     fig, ax = init_figure_and_axes(xlim, ylim)
 
     vehicles_patches = [init_vehicle_patch(v, i) for i, v in enumerate(vehicles)]
@@ -90,8 +95,8 @@ def animate_vehicles(vehicles, save=False):
 
     simulation_length = len(vehicles[0].get_history('position'))
 
-    anim = animation.FuncAnimation(fig, animate, 
-                                   init_func=init, 
+    anim = animation.FuncAnimation(fig, animate,
+                                   init_func=init,
                                    frames=simulation_length,
                                    interval=10,
                                    blit=True)
